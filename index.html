@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Investment Break Up</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    />
+
+    <style>
+      .done {
+        background-color: #90ee90;
+      }
+
+      .not-done {
+        background-color: #ff474c;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="grid place-items-center">
+      <h1 class="font-bold py-6 text-xl">{{ topHeading }}</h1>
+
+      <section id="earning-section" class="p-2 my-6 border bg-gray-200">
+        <label for="earningID">Total Earning</label>
+        <input
+          type="text"
+          name="earning"
+          id="earningID"
+          class="border px-2"
+          v-model="TotalEarning"
+        />
+
+        <label for="investedID">Total Invested</label>
+        <input
+          type="text"
+          name="invested"
+          id="investedID"
+          class="border"
+          v-model="getInvestedAmt"
+        />
+
+        <label for="remainingID">Total Remaining</label>
+        <input
+          type="text"
+          name="remaining"
+          id="remainingID"
+          class="border"
+          v-model="getRemainingAmt"
+        />
+
+        <label for="remainingPerID">Total Remaining (%)</label>
+        <input
+          type="text"
+          name="remainingPer"
+          id="remainingPerID"
+          class="border"
+          v-model="getRemaingPer"
+        />
+      </section>
+
+      <section
+        id="bank-section"
+        class="border bg-gray-200 p-2 grid place-items-center"
+      >
+        <div>
+          <label for="bankID">Add Bank</label>
+          <input
+            type="text"
+            name="bank"
+            id="bankID"
+            class="border"
+            v-model="newBank"
+          />
+          <button
+            @click="addBank"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            <span class="material-symbols-outlined"> add </span>
+          </button>
+        </div>
+
+        <table v-if="banks.length" class="border border-black my-4">
+          <thead>
+            <td class="border border-black font-bold px-2">Completed</td>
+            <td class="border border-black font-bold px-2">Bank Name</td>
+            <td class="border border-black font-bold px-2">Share (INR)</td>
+          </thead>
+          <tbody>
+            <tr
+              v-for="bankName of banks"
+              :key="bankName.id"
+              :class="bankName.is_transfered ? 'done' : 'not-done' "
+            >
+              <td class="border border-black px-2 text-center">
+                <input type="checkbox" v-model="bankName.is_transfered" />
+              </td>
+              <td class="border border-black px-2">{{ bankName.name }}</td>
+              <td class="border border-black text-center">
+                {{ getBankBreakup(bankName.name) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="border bg-gray-200 p-2 grid place-items-center m-6">
+        <div>
+          <label for="investmentID">Add Investment</label>
+          <input
+            type="text"
+            name="investment"
+            id="investmentID"
+            class="border"
+            v-model="newInvestment"
+          />
+
+          <button
+            @click="addInvestment"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            <span class="material-symbols-outlined"> add </span>
+          </button>
+
+          <table v-if="investments.length" class="border border-black my-4">
+            <thead>
+              <td class="border border-black font-bold px-2">Completed</td>
+              <td class="border border-black font-bold px-2">Component</td>
+              <td class="border border-black font-bold px-2">Share (INR)</td>
+              <td class="border border-black font-bold px-2">Percentage</td>
+              <td class="border border-black font-bold px-2">Bank</td>
+            </thead>
+            <tbody>
+              <tr v-for="(investment,idx ) in investments" :key="investment.id">
+                <td class="border border-black px-2 text-center">
+                  <input type="checkbox" v-model="investment.is_transfered" />
+                </td>
+                <td class="border border-black px-2">
+                  {{ investment.component }}
+                </td>
+                <td class="border border-black text-center">
+                  <input type="text" v-model="investment.amount" />
+                </td>
+                <td class="border border-black text-center">
+                  {{ getInvBreakup(investment.amount) }}
+                </td>
+                <td class="border border-black text-center">
+                  <select v-model="investment.bank">
+                    <option v-for="avlbank in availableBank" :value="avlbank">
+                      {{ avlbank }}
+                    </option>
+                  </select>
+                  <!-- {{investment.bank}} -->
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <!-- <pre>{{ data }}</pre> -->
+      <!-- <pre> {{ banks }} </pre> -->
+      <!-- <pre> {{ investments }} </pre> -->
+      <!-- <pre> {{ availableBank }}</pre> -->
+      <!-- <pre>{{getInvestedAmt}}</pre> -->
+      <!-- <pre>{{getBankBreakup('CITI')}}</pre> -->
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script>
+      var app = new Vue({
+        el: "#app",
+        data: {
+          topHeading: "Investment Break Up!",
+          TotalEarning: 0,
+          newBank: "",
+          newInvestment: "",
+          banks: [
+            { id: 0, name: "Axis", is_transfered: false },
+            { id: 1, name: "CITI", is_transfered: false },
+            { id: 2, name: "ICICI", is_transfered: false },
+            { id: 3, name: "Kotak", is_transfered: false },
+            { id: 4, name: "PnB", is_transfered: false },
+            {
+              id: 5,
+              name: "State Bank of India",
+              is_transfered: false,
+              share: 0,
+            },
+          ],
+          investments: [
+            {
+              id: 0,
+              component: "EMI",
+              amount: 50000,
+              percent: 26.32,
+              bank: "CITI",
+              is_transfered: false,
+            },
+            {
+              id: 1,
+              component: "Society Maintainance",
+              amount: 5000,
+              percent: 2.63,
+              bank: "Kotak",
+              is_transfered: false,
+            },
+            {
+              id: 2,
+              component: "Fixed Mutual Fund",
+              amount: "14000",
+              percent: 0,
+              bank: "State Bank of India",
+              is_transfered: false,
+            },
+            {
+              id: 3,
+              component: "Term Insurance",
+              amount: "1000",
+              percent: 0,
+              bank: "State Bank of India",
+              is_transfered: false,
+            },
+            {
+              id: 4,
+              component: "Liquid Fund 1",
+              amount: "10000",
+              percent: 0,
+              bank: "State Bank of India",
+              is_transfered: false,
+            },
+            {
+              id: 5,
+              component: "Liquid Fund 2",
+              amount: "10000",
+              percent: 0,
+              bank: "PnB",
+              is_transfered: false,
+            },
+            {
+              id: 6,
+              component: "Public Provident Fund",
+              amount: "10000",
+              percent: 0,
+              bank: "State Bank of India",
+              is_transfered: false,
+            },
+            {
+              id: 7,
+              component: "Car Loan",
+              amount: "10000",
+              percent: 0,
+              bank: "ICICI",
+              is_transfered: false,
+            },
+            {
+              id: 8,
+              component: "Papa Transfer",
+              amount: "20000",
+              percent: 0,
+              bank: "Kotak",
+              is_transfered: false,
+            },
+            {
+              id: 9,
+              component: "NPS",
+              amount: "10000",
+              percent: 0,
+              bank: "PnB",
+              is_transfered: false,
+            },
+          ],
+        },
+
+        computed: {
+          availableBank() {
+            return this.banks.map((i) => `${i.name}`);
+          },
+          getInvestedAmt() {
+            let vtotal = 0;
+            for (let inv of this.investments) {
+              vtotal = vtotal + Number(inv.amount);
+            }
+            return vtotal;
+          },
+          getRemainingAmt() {
+            return this.TotalEarning - this.getInvestedAmt;
+          },
+          getRemaingPer() {
+            return Math.round(
+              (this.getRemainingAmt / this.TotalEarning) * 100,
+              2
+            );
+          },
+          getBankBreakup: function (pBank) {
+            return function (pBank) {
+              let vtotal = 0;
+              for (let inv of this.investments) {
+                if (inv.bank == pBank) {
+                  vtotal = vtotal + Number(inv.amount);
+                }
+              }
+              return vtotal;
+            };
+          },
+          getInvBreakup: function (pInv) {
+            return function (pInv) {
+              let vPer1;
+              let vPer2;
+              vPer1 = Math.round((pInv / this.getInvestedAmt) * 100);
+              vPer2 = Math.round((pInv / this.TotalEarning) * 100);
+              return vPer1 + " / " + vPer2;
+            };
+          },
+        },
+
+        methods: {
+          getMax(arr, prop) {
+            var max;
+            for (var i = 0; i < arr.length; i++) {
+              if (max == null || parseInt(arr[i][prop]) > parseInt(max[prop]))
+                max = arr[i];
+            }
+            return max;
+          },
+
+          addBank() {
+            if (!this.newBank) {
+              alert("Please enter a valid bank name");
+              return 0;
+            }
+            var nextID = this.getMax(this.banks, "id");
+            this.banks.push({
+              id: nextID.id + 1,
+              name: this.newBank,
+              is_transfered: false,
+              share: 0,
+            });
+            this.newBank = "";
+          },
+
+          addInvestment() {
+            if (!this.newInvestment) {
+              alert("Please enter a valid Investment name");
+              return 0;
+            }
+            var nextInvID = this.getMax(this.investments, "id");
+            this.investments.push({
+              id: nextInvID.id + 1,
+              component: this.newInvestment,
+              amount: 0,
+              percent: 0,
+              bank: "",
+              is_transfered: false,
+            });
+            this.newInvestment = "";
+          },
+        },
+      });
+    </script>
+  </body>
+</html>
